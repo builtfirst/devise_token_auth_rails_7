@@ -29,6 +29,10 @@ module DeviseTokenAuth::Concerns::ResourceFinder
                 end
   end
 
+  def find_resource_hsh(q_values)
+    @resource = resource_class.dta_find_by(**q_values, provider: provider)
+  end
+
   def database_adapter
     @database_adapter ||= begin
       rails_version = [Rails::VERSION::MAJOR, Rails::VERSION::MINOR].join(".")
