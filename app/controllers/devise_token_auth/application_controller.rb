@@ -16,6 +16,16 @@ module DeviseTokenAuth
 
     protected
 
+    def finder_keys
+      @finder_keys ||= (resource_params.keys.map(&:to_sym) & resource_class.authentication_keys)
+    end
+
+    def finder_hsh
+      finder_keys.each_with_object({}) do |field, acc|
+        acc[field] = get_case_insensitive_field_from_resource_params(field)
+      end
+    end
+
     def blacklisted_redirect_url?(redirect_url)
       DeviseTokenAuth.redirect_whitelist && !DeviseTokenAuth::Url.whitelisted?(redirect_url)
     end

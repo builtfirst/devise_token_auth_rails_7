@@ -136,6 +136,7 @@ class DeviseTokenAuth::SessionsControllerTest < ActionController::TestCase
 
       describe 'alt auth keys' do
         before do
+          @existing_user = create(:user, :with_nickname, :confirmed)
           post :create,
                params: { nickname: @existing_user.nickname,
                          password: @existing_user.password }
