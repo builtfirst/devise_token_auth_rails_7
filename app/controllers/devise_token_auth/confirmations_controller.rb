@@ -24,10 +24,11 @@ module DeviseTokenAuth
           redirect_to_link = DeviseTokenAuth::Url.generate(redirect_url, redirect_header_options)
        end
 
-        redirect_to(redirect_to_link)
+        redirect_to(redirect_to_link, allow_other_host: true)
       else
         if redirect_url
-          redirect_to DeviseTokenAuth::Url.generate(redirect_url, account_confirmation_success: false)
+          redirect_to(DeviseTokenAuth::Url.generate(redirect_url, account_confirmation_success: false),
+                      allow_other_host: true)
         else
           raise ActionController::RoutingError, 'Not Found'
         end
