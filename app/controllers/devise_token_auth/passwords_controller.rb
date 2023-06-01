@@ -55,7 +55,9 @@ module DeviseTokenAuth
         yield @resource if block_given?
 
         if require_client_password_reset_token?
-          redirect_to DeviseTokenAuth::Url.generate(@redirect_url, reset_password_token: resource_params[:reset_password_token])
+          redirect_to(DeviseTokenAuth::Url.generate(@redirect_url,
+                                                    reset_password_token: resource_params[:reset_password_token]),
+                      allow_other_host: true)
         else
           if DeviseTokenAuth.cookie_enabled
             set_token_in_cookie(@resource, token)
@@ -66,7 +68,7 @@ module DeviseTokenAuth
                                                     token.client,
                                                     redirect_header_options)
           redirect_to(@resource.build_auth_url(@redirect_url,
-                                               redirect_headers))
+                                               redirect_headers), allow_other_host: true)
         end
       else
         render_edit_error
