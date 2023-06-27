@@ -90,6 +90,7 @@ module DeviseTokenAuth::Concerns::User
     end
 
     def create_token(client: nil, lifespan: nil, cost: nil, **token_extras)
+      token_extras = yield token_extras if block_given?
       token = DeviseTokenAuth::TokenFactory.create(client: client, lifespan: lifespan, cost: cost)
 
       tokens[token.client] = {
