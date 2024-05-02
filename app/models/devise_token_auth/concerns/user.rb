@@ -3,6 +3,9 @@
 module DeviseTokenAuth::Concerns::User
   extend ActiveSupport::Concern
 
+  MAX_SCREENSHOT_TOKENS = 4.freeze
+  MAX_CLIENT_TOKENS = DeviseTokenAuth.max_number_of_devices - MAX_SCREENSHOT_TOKENS.freeze
+
   def self.tokens_match?(token_hash, token)
     @token_equality_cache ||= {}
 
@@ -202,9 +205,9 @@ module DeviseTokenAuth::Concerns::User
     { DeviseTokenAuth.headers_names[:"authorization"] => bearer_token }
   end
 
-  def update_auth_headers(token, client = 'default')
+  def update_auth_headers(token, client = 'default', screenshot = false)
     headers = build_auth_headers(token, client)
-    clean_old_tokens
+    clean_old_tokens(screenshot)
     save!
 
     headers
@@ -256,21 +259,49 @@ module DeviseTokenAuth::Concerns::User
   end
 
   def max_client_tokens_exceeded?
-    tokens.length > DeviseTokenAuth.max_number_of_devices
+    # remove the slots for max_screen_shot_tokens
+    client_tokens.length > MAX_CLIENT_TOKENS
   end
 
-  def clean_old_tokens
-    if tokens.present? && max_client_tokens_exceeded?
-      # Using Enumerable#sort_by on a Hash will typecast it into an associative
-      #   Array (i.e. an Array of key-value Array pairs). However, since Hashes
-      #   have an internal order in Ruby 1.9+, the resulting sorted associative
-      #   Array can be converted back into a Hash, while maintaining the sorted
-      #   order.
-      self.tokens = tokens.sort_by { |_cid, v| v[:expiry] || v['expiry'] }.to_h
+  def clean_old_tokens(screenshot = false)
+    return unless tokens.present?
+    return clean_old_screenshot_tokens if screenshot
+    
 
-      # Since the tokens are sorted by expiry, shift the oldest client token
-      #   off the Hash until it no longer exceeds the maximum number of clients
-      tokens.shift while max_client_tokens_exceeded?
+    if max_client_tokens_exceeded?
+      client_tokens = tokens.select { |cid, v| !v["screenshot"] && !v[:screenshot] }
+      # Sort client tokens by expiry and convert back to a hash
+      sorted_client_tokens = client_tokens.sort_by { |_cid, v| v[:expiry] || v['expiry'] }.to_h
+
+      # Remove the oldest token until the count is within the maximum limit
+      while sorted_client_tokens.length > MAX_CLIENT_TOKENS
+        oldest_token = sorted_client_tokens.keys.first
+        sorted_client_tokens.delete(oldest_token)
+        self.tokens.delete(oldest_token)
+      end
+    end
+  end
+
+  private
+
+  def client_tokens 
+    tokens.select { |cid, v| !v["screenshot"] && !v[:screenshot] }
+  end
+
+  def clean_old_screenshot_tokens
+    # Select tokens that are marked as screenshots
+    screenshot_tokens = tokens.select { |cid, v| v["screenshot"] || v[:screenshot] }
+    # Check if the number of screenshot tokens exceeds the maximum allowed
+    if screenshot_tokens.length >= MAX_SCREENSHOT_TOKENS
+      # Sort screenshot tokens by expiry and convert back to a hash
+      sorted_screenshot_tokens = screenshot_tokens.sort_by { |_cid, v| v[:expiry] || v['expiry'] }.to_h
+
+      # Remove the oldest token until the count is within the maximum limit
+      while sorted_screenshot_tokens.length > MAX_SCREENSHOT_TOKENS
+        oldest_token = sorted_screenshot_tokens.keys.first
+        sorted_screenshot_tokens.delete(oldest_token)
+        self.tokens.delete(oldest_token)
+      end
     end
   end
 end
