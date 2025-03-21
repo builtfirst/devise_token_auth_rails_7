@@ -2,6 +2,7 @@
 
 module DeviseTokenAuth
   class PasswordsController < DeviseTokenAuth::ApplicationController
+    before_action :check_already_used_token, only: [:edit]
     before_action :validate_redirect_url_param, only: [:create, :edit]
     skip_after_action :update_auth_header, only: [:create, :edit]
 
@@ -213,6 +214,17 @@ module DeviseTokenAuth
 
     def require_client_password_reset_token?
       DeviseTokenAuth.require_client_password_reset_token
+    end
+
+    def check_already_used_token
+      reset_password_token = Devise.token_generator.digest(self, :reset_password_token,
+                                                           resource_params[:reset_password_token])
+      used_reset_password_token = UsedResetPasswordToken.find_by(reset_password_token:)
+
+      return unless used_reset_password_token.present?
+
+      @resource = used_reset_password_token.user
+      render_token_expired_error
     end
   end
 end
