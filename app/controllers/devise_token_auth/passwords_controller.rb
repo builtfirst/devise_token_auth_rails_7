@@ -2,6 +2,7 @@
 
 module DeviseTokenAuth
   class PasswordsController < DeviseTokenAuth::ApplicationController
+    before_action :check_already_used_token, only: [:edit]
     before_action :validate_redirect_url_param, only: [:create, :edit]
     skip_after_action :update_auth_header, only: [:create, :edit]
 
@@ -41,37 +42,33 @@ module DeviseTokenAuth
     def edit
       # if a user is not found, return nil
       @resource = resource_class.with_reset_password_token(resource_params[:reset_password_token])
+      return render_not_found_error unless @resource.present?
+      return render_token_expired_error unless @resource.reset_password_period_valid?
 
-      if @resource && @resource.reset_password_period_valid?
-        token = @resource.create_token unless require_client_password_reset_token?
+      token = @resource.create_token unless require_client_password_reset_token?
 
-        # ensure that user is confirmed
-        @resource.confirm! unless @resource.confirmed?
-        # allow user to change password once without current_password
-        @resource.allow_password_change = true if recoverable_enabled?
+      # ensure that user is confirmed
+      @resource.confirm! unless @resource.confirmed?
+      # allow user to change password once without current_password
+      @resource.allow_password_change = true if recoverable_enabled?
 
-        @resource.save!
+      @resource.save!
 
-        yield @resource if block_given?
+      yield @resource if block_given?
 
-        if require_client_password_reset_token?
-          redirect_to(DeviseTokenAuth::Url.generate(@redirect_url,
-                                                    reset_password_token: resource_params[:reset_password_token]),
-                      allow_other_host: true)
-        else
-          if DeviseTokenAuth.cookie_enabled
-            set_token_in_cookie(@resource, token)
-          end
-
-          redirect_header_options = { reset_password: true }
-          redirect_headers = build_redirect_headers(token.token,
-                                                    token.client,
-                                                    redirect_header_options)
-          redirect_to(@resource.build_auth_url(@redirect_url,
-                                               redirect_headers), allow_other_host: true)
-        end
+      if require_client_password_reset_token?
+        redirect_to(DeviseTokenAuth::Url.generate(@redirect_url,
+                                                  reset_password_token: resource_params[:reset_password_token]),
+                    allow_other_host: true)
       else
-        render_edit_error
+        set_token_in_cookie(@resource, token) if DeviseTokenAuth.cookie_enabled
+
+        redirect_header_options = { reset_password: true }
+        redirect_headers = build_redirect_headers(token.token,
+                                                  token.client,
+                                                  redirect_header_options)
+        redirect_to(@resource.build_auth_url(@redirect_url,
+                                             redirect_headers), allow_other_host: true)
       end
     end
 
@@ -217,6 +214,17 @@ module DeviseTokenAuth
 
     def require_client_password_reset_token?
       DeviseTokenAuth.require_client_password_reset_token
+    end
+
+    def check_already_used_token
+      reset_password_token = Devise.token_generator.digest(self, :reset_password_token,
+                                                           resource_params[:reset_password_token])
+      used_reset_password_token = UsedResetPasswordToken.find_by(reset_password_token:)
+
+      return unless used_reset_password_token.present?
+
+      @resource = used_reset_password_token.user
+      render_token_expired_error
     end
   end
 end
