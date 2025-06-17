@@ -42,7 +42,7 @@ module DeviseTokenAuth
     def edit
       # if a user is not found, return nil
       @resource = resource_class.with_reset_password_token(resource_params[:reset_password_token])
-      return render_not_found_error unless @resource.present?
+      return render_not_found_error_with_info unless @resource.present?
       return render_token_expired_error unless @resource.reset_password_period_valid?
 
       token = @resource.create_token unless require_client_password_reset_token?
