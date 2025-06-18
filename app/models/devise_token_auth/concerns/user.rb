@@ -94,6 +94,7 @@ module DeviseTokenAuth::Concerns::User
 
     def create_token(client: nil, lifespan: nil, cost: nil, **token_extras)
       token_extras = yield token_extras if block_given?
+      lifespan ||= try(:timeout_in)
       token = DeviseTokenAuth::TokenFactory.create(client: client, lifespan: lifespan, cost: cost)
 
       tokens[token.client] = {
@@ -177,7 +178,7 @@ module DeviseTokenAuth::Concerns::User
       client: client,
       previous_token: tokens.fetch(client, {})['token'],
       last_token: tokens.fetch(client, {})['previous_token'],
-      updated_at: now
+      updated_at: now,
     )
 
     update_auth_headers(token.token, token.client)
@@ -266,7 +267,7 @@ module DeviseTokenAuth::Concerns::User
   def clean_old_tokens(screenshot = false)
     return unless tokens.present?
     return clean_old_screenshot_tokens if screenshot
-    
+
 
     if max_client_tokens_exceeded?
       client_tokens = tokens.select { |cid, v| !v["screenshot"] && !v[:screenshot] }
@@ -284,7 +285,7 @@ module DeviseTokenAuth::Concerns::User
 
   private
 
-  def client_tokens 
+  def client_tokens
     tokens.select { |cid, v| !v["screenshot"] && !v[:screenshot] }
   end
 
