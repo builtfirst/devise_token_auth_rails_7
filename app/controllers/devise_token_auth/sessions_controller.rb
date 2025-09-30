@@ -31,13 +31,14 @@ module DeviseTokenAuth
         yield @resource if block_given?
 
         render_create_success
-      elsif @resource && !(!@resource.respond_to?(:active_for_authentication?) || @resource.active_for_authentication?)
+      elsif @resource && !Devise.paranoid && !(!@resource.respond_to?(:active_for_authentication?) || @resource.active_for_authentication?)
         if @resource.respond_to?(:locked_at) && @resource.locked_at
           render_create_error_account_locked
         else
           render_create_error_not_confirmed
         end
       else
+        hash_password_in_paranoid_mode
         render_create_error_bad_credentials
       end
     end
@@ -131,7 +132,7 @@ module DeviseTokenAuth
     end
 
     def create_and_assign_token
-      if @resource.respond_to?(:with_lock)
+      if @resource.respond_to?(:with_lock) && !@resource.changed?
         @resource.with_lock do
           @token = @resource.create_token
           @resource.save!
@@ -140,6 +141,14 @@ module DeviseTokenAuth
         @token = @resource.create_token
         @resource.save!
       end
+    end
+
+    def hash_password_in_paranoid_mode
+      # In order to avoid timing attacks in paranoid mode, we want the password hash to be
+      # calculated even if no resource has been found. Devise's DatabaseAuthenticatable warden
+      # strategy handles this case similarly:
+      # https://github.com/heartcombo/devise/blob/main/lib/devise/strategies/database_authenticatable.rb
+      resource_class.new.password = resource_params[:password] if Devise.paranoid
     end
   end
 end
