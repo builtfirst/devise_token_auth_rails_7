@@ -21,9 +21,23 @@ module DeviseTokenAuth
     end
 
     def finder_hsh
-      finder_keys.each_with_object({}) do |field, acc|
+      # When organization_id is present, construct uid from email/organization_id
+      # This supports multi-org ManagerUsers where uid = "email/org_id"
+      if params[:organization_id].present? && finder_keys.include?(:email)
+        email = get_case_insensitive_field_from_resource_params(:email)
+        return { uid: "#{email}/#{params[:organization_id]}", community_id: nil }
+      end
+
+      # Default behavior: build finder hash from authentication_keys (typically email)
+      result = finder_keys.each_with_object({}) do |field, acc|
         acc[field] = get_case_insensitive_field_from_resource_params(field)
       end
+
+      # BuyerUser: community_id is present, add it for multi-tenant lookups
+      # ManagerUser (orphan): community_id is NOT present, add nil to avoid matching BuyerUsers
+      result[:community_id] = params[:community_id].presence
+
+      result
     end
 
     def blacklisted_redirect_url?(redirect_url)
