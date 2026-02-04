@@ -11,8 +11,13 @@ module DeviseTokenAuth
       return render_create_error_missing_email unless resource_params[:email]
 
       @email = get_case_insensitive_field_from_resource_params(:email)
+      
+      q_values = {
+        email: @email,
+        **finder_hsh
+      }
 
-      @resource = find_resource_hsh(finder_hsh)
+      @resource = find_resource_hsh(q_values)
 
       if @resource
         yield @resource if block_given?

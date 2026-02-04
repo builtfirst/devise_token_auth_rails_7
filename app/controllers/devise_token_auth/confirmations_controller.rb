@@ -40,7 +40,7 @@ module DeviseTokenAuth
 
       @email = get_case_insensitive_field_from_resource_params(:email)
 
-      @resource = find_resource_hsh(finder_hsh)
+      @resource = resource_class.dta_find_by(uid: @email, provider: provider)
 
       return render_not_found_error unless @resource
 
