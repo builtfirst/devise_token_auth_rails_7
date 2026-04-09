@@ -20,16 +20,14 @@ Gem::Specification.new do |s|
   s.test_files = Dir['test/**/*']
   s.test_files.reject! { |file| file.match(/[.log|.sqlite3]$/) }
 
-  s.required_ruby_version = ">= 2.3.0"
+  s.required_ruby_version = '>= 3.1.0'
 
-  s.add_dependency 'rails', '>= 4.2.0', '< 8.1'
-  s.add_dependency 'devise', '> 3.5.2', '< 5'
+  s.add_dependency 'rails', '>= 4.2.0', '< 9'
+  s.add_dependency 'devise', '> 3.5.2', '< 6'
   s.add_dependency 'bcrypt', '~> 3.0'
 
   s.add_development_dependency 'appraisal'
-  s.add_development_dependency 'sqlite3', '~> 1.4'
+  s.add_development_dependency 'sqlite3', '>= 2.1'
   s.add_development_dependency 'pg'
-  s.add_development_dependency 'mysql2'
-  s.add_development_dependency 'mongoid', '>= 4', '< 8'
-  s.add_development_dependency 'mongoid-locker', '~> 2.0'
+  # Mongoid is optional; add via Appraisal when maintaining Mongoid-specific gemfiles.
 end
