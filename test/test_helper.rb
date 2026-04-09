@@ -38,7 +38,7 @@ end
 class ActiveSupport::TestCase
   include FactoryBot::Syntax::Methods
 
-  ActiveRecord::Migration.check_pending! if DEVISE_TOKEN_AUTH_ORM == :active_record
+  ActiveRecord::Migration.maintain_test_schema! if DEVISE_TOKEN_AUTH_ORM == :active_record
 
   strategies = { active_record: :transaction,
                  mongoid: :deletion }

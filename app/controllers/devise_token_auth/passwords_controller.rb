@@ -217,9 +217,12 @@ module DeviseTokenAuth
     end
 
     def check_already_used_token
+      model = "UsedResetPasswordToken".safe_constantize
+      return unless model
+
       reset_password_token = Devise.token_generator.digest(self, :reset_password_token,
                                                            resource_params[:reset_password_token])
-      used_reset_password_token = UsedResetPasswordToken.find_by(reset_password_token:)
+      used_reset_password_token = model.find_by(reset_password_token:)
 
       return unless used_reset_password_token.present?
 
