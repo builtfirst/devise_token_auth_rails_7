@@ -6,6 +6,7 @@ source 'https://rubygems.org'
 # Bundler will treat runtime dependencies like base dependencies, and
 # development dependencies will be added by default to the :development group.
 gemspec
+gem 'devise', '~> 5.0'
 gem 'omniauth', '~> 2.0'
 gem 'omniauth-rails_csrf_protection'
 
@@ -36,7 +37,7 @@ group :development, :test do
   gem 'fuzz_ball'
   gem 'minitest'
   gem 'minitest-focus'
-  gem 'minitest-rails', '~> 7'
+  gem 'minitest-rails', '~> 8.0'
   gem 'minitest-reporters'
   gem 'mocha', '>= 1.5'
   gem 'pry'
@@ -56,19 +57,4 @@ group :development do
   gem 'github_changelog_generator'
 end
 
-if ENV['MONGOID_VERSION']
-  case ENV['MONGOID_VERSION']
-  when /^7/
-    gem 'mongoid', '~> 7'
-  when /^6/
-    gem 'mongoid', '~> 6'
-  when /^5/
-    gem 'mongoid', '~> 5'
-  else
-    gem 'mongoid', '>= 5'
-  end
-
-  gem 'mongoid-locker', '~> 2.0'
-end
-
-gem "rails", "~> 7"
+gem 'rails', '~> 8.1'
